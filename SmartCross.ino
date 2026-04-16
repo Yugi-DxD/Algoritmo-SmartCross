@@ -8,7 +8,7 @@ int estado = 0;
 int tempoAmarelo = 2000;
 int tempoVerde = 5000;
 int tempoPedestre = tempoVerde;
-int tempoEspera = 1000; 
+int tempoEspera = 1000;
 
 const int pinTrigger = 6;
 const int pinEccho = 7;
@@ -19,22 +19,21 @@ void GerenciarTravessia(int tempoBaseTravessia);
 
 void setup()
 {
+  pinMode(pinTrigger, OUTPUT); // ADICIONADO: Configuração do sensor
+  pinMode(pinEccho, INPUT);    // ADICIONADO: Configuração do sensor
 
   for(int i = 0 ; i < 3 ; i++)
   {
-  pinMode(ledVeiculo[i], OUTPUT);
+    pinMode(ledVeiculo[i], OUTPUT);
     if(i < 2) pinMode(ledPedestre[i], OUTPUT);
   }
-
 }
 
 void loop()
 {
-estado++;
-
+  estado++;
+  if(estado > 4) estado = 1; // CORRIGIDO: Impede o "ciclo fantasma"
   EstadoSemaforo(estado);
-  if(estado > 4) estado = 1;
-
 }
 
 float CalcularDistancia()
@@ -56,10 +55,10 @@ float CalcularDistancia()
   return distancia;
 }
 
-void GerenciarTravessia(int tempoBaseTravessia);
+void GerenciarTravessia(int tempoBaseTravessia) // CORRIGIDO: Sem ponto e vírgula aqui
 {
-  float larguraAvenida = 500.0; // 5 cm
-  float velocidadeLimiar = 80.0 // cm/s
+  float larguraAvenida = 500.0; // cm
+  float velocidadeLimiar = 80.0; // cm/s - CORRIGIDO: Ponto e vírgula adicionado
 
   int tempoDecorrido = 0;
   int tempoAtualTravessia = tempoBaseTravessia;
@@ -68,13 +67,13 @@ void GerenciarTravessia(int tempoBaseTravessia);
 
   while(tempoDecorrido < tempoAtualTravessia) {
     delay(200); // Esse será o nosso dT = 0.2s
-    tempoDeccorido += 200;
+    tempoDecorrido += 200; // CORRIGIDO: Nome da variável
 
     float distanciaAtual = CalcularDistancia();
 
-    if(distanciaAtual > 2.0 && distanciaAtual < larguraVia){
+    if(distanciaAtual > 2.0 && distanciaAtual < larguraAvenida){ // CORRIGIDO: Nome da variável
       float dS = abs(distanciaAnterior - distanciaAtual);
-      float velocidadeMedia = ds / 0.2;
+      float velocidadeMedia = dS / 0.2; // CORRIGIDO: S maiúsculo
 
       if(velocidadeMedia > 5.0 && velocidadeMedia < velocidadeLimiar){
         float tempoExtra = (distanciaAtual / velocidadeMedia) * 1000;
@@ -88,8 +87,8 @@ void GerenciarTravessia(int tempoBaseTravessia);
         }
       }
     }
+    distanciaAnterior = distanciaAtual; // CORRIGIDO: Movido para DENTRO do laço while
   }
-  distanciaAnterior = distanciaAtual;
 }
 
 void EstadoSemaforo(int estado)
@@ -129,5 +128,4 @@ void EstadoSemaforo(int estado)
         delay(tempoEspera);
         break;
   }
-
 }
