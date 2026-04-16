@@ -55,39 +55,53 @@ float CalcularDistancia()
   return distanciaMetros;
 }
 
-void GerenciarTravessia(int tempoBaseTravessia) // CORRIGIDO: Sem ponto e vírgula aqui
+void GerenciarTravessia(int tempoBaseTravessiaMS) 
 {
-  float larguraAvenida = 500.0; // cm
-  float velocidadeLimiar = 80.0; // cm/s - CORRIGIDO: Ponto e vírgula adicionado
+  // --- VARIÁVEIS NO SISTEMA INTERNACIONAL (SI) ---
+  float larguraAvenida = 5.0;           // Metros (m)
+  float velocidadeLimiar = 0.8;         // Metros por segundo (m/s)
+  float limiteMinimoSensor = 0.02;      // Metros (m) - Ponto cego do HC-SR04
+  float limiteRuidoVelocidade = 0.05;   // Metros por segundo (m/s) - Filtro de objetos parados
+  
+  float deltaT = 0.2;                   // Segundos (s) - Intervalo de amostragem
+  
+  // Conversão do tempo que vem do Loop (ms) para Segundos (s)
+  float tempoDecorrido = 0.0; 
+  float tempoAtualTravessia = tempoBaseTravessiaMS / 1000.0; 
 
-  int tempoDecorrido = 0;
-  int tempoAtualTravessia = tempoBaseTravessia;
-
-  float distanciaAnterior = CalcularDistancia();
+  float distanciaAnterior = CalcularDistancia(); // m
 
   while(tempoDecorrido < tempoAtualTravessia) {
-    delay(200); // Esse será o nosso dT = 0.2s
-    tempoDecorrido += 200; // CORRIGIDO: Nome da variável
+    
+    delay(deltaT * 1000); // O delay exige milissegundos, então multiplicamos na chamada
+    tempoDecorrido += deltaT; 
 
-    float distanciaAtual = CalcularDistancia();
+    float distanciaAtual = CalcularDistancia(); // m
 
-    if(distanciaAtual > 2.0 && distanciaAtual < larguraAvenida){ // CORRIGIDO: Nome da variável
-      float dS = abs(distanciaAnterior - distanciaAtual);
-      float velocidadeMedia = dS / 0.2; // CORRIGIDO: S maiúsculo
+    // Verifica se a leitura é válida (Ignora o ponto cego e o que está fora da rua)
+    if(distanciaAtual > limiteMinimoSensor && distanciaAtual < larguraAvenida){ 
+      
+      float dS = abs(distanciaAnterior - distanciaAtual); // m
+      float velocidadeMedia = dS / deltaT;                // m/s
 
-      if(velocidadeMedia > 5.0 && velocidadeMedia < velocidadeLimiar){
-        float tempoExtra = (distanciaAtual / velocidadeMedia) * 1000;
+      // Filtra o ruído e verifica se a pessoa está lenta
+      if(velocidadeMedia > limiteRuidoVelocidade && velocidadeMedia < velocidadeLimiar){
+        
+        // t = S / v  -> O tempo extra é a distância que falta dividida pela velocidade
+        float tempoExtra = distanciaAtual / velocidadeMedia; // s
 
+        // Se o tempo previsto for maior que o tempo que já temos, injeta mais tempo
         if((tempoDecorrido + tempoExtra) > tempoAtualTravessia){
           tempoAtualTravessia = tempoDecorrido + tempoExtra;
 
-          if(tempoAtualTravessia > 15000){
-            tempoAtualTravessia = 15000;
+          // Trava de segurança limite absoluto (15 segundos)
+          if(tempoAtualTravessia > 15.0){
+            tempoAtualTravessia = 15.0;
           }
         }
       }
     }
-    distanciaAnterior = distanciaAtual; // CORRIGIDO: Movido para DENTRO do laço while
+    distanciaAnterior = distanciaAtual; 
   }
 }
 
