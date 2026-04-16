@@ -56,6 +56,42 @@ float CalcularDistancia()
   return distancia;
 }
 
+void GerenciarTravessia(int tempoBaseTravessia);
+{
+  float larguraAvenida = 500.0; // 5 cm
+  float velocidadeLimiar = 80.0 // cm/s
+
+  int tempoDecorrido = 0;
+  int tempoAtualTravessia = tempoBaseTravessia;
+
+  float distanciaAnterior = CalcularDistancia();
+
+  while(tempoDecorrido < tempoAtualTravessia) {
+    delay(200); // Esse será o nosso dT = 0.2s
+    tempoDeccorido += 200;
+
+    float distanciaAtual = CalcularDistancia();
+
+    if(distanciaAtual > 2.0 && distanciaAtual < larguraVia){
+      float dS = abs(distanciaAnterior - distanciaAtual);
+      float velocidadeMedia = ds / 0.2;
+
+      if(velocidadeMedia > 5.0 && velocidadeMedia < velocidadeLimiar){
+        float tempoExtra = (distanciaAtual / velocidadeMedia) * 1000;
+
+        if((tempoDecorrido + tempoExtra) > tempoAtualTravessia){
+          tempoAtualTravessia = tempoDecorrido + tempoExtra;
+
+          if(tempoAtualTravessia > 15000){
+            tempoAtualTravessia = 15000;
+          }
+        }
+      }
+    }
+  }
+  distanciaAnterior = distanciaAtual;
+}
+
 void EstadoSemaforo(int estado)
 {
   switch(estado)
@@ -84,7 +120,7 @@ void EstadoSemaforo(int estado)
         digitalWrite(ledVeiculo[0], HIGH);
         digitalWrite(ledPedestre[1], HIGH);
         digitalWrite(ledPedestre[0], LOW);
-        delay(tempoPedestre);
+        GerenciarTravessia(tempoPedestre);
         break;
 
     case 4: //Margem de Segurança
