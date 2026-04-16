@@ -44,15 +44,15 @@ float CalcularDistancia()
   delayMicroseconds(10);
   digitalWrite(pinTrigger, LOW);
 
-  // Lê o tempo de retorno do eco
+  // Lê o tempo de retorno do eco em MICROSSEGUNDOS
   long duracao = pulseIn(pinEccho, HIGH);
 
-  // Calcula a Distância do obstáculo até o sensor: D = v * t
-  // onde "v" é a velocidade do som e "t" é o tempo
-  float distancia = (0.034 * duracao) / 2;
-  // Divide por 2 pois o pulso vai e volta, percorre o mesmo espaço duas vezes
+  // Conversão direta para METROS (SI)
+  // Velocidade do som = 343 m/s. 
+  // Distância = (343 * duracao * 10^-6) / 2
+  float distanciaMetros = duracao * 0.0001715; 
 
-  return distancia;
+  return distanciaMetros;
 }
 
 void GerenciarTravessia(int tempoBaseTravessia) // CORRIGIDO: Sem ponto e vírgula aqui
