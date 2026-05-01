@@ -131,9 +131,10 @@ void GerenciarTravessia(int tempoBaseTravessiaMS)
 {
   // --- VARIÁVEIS NO SISTEMA INTERNACIONAL (SI) ---
   float larguraAvenida = 5.0;           // Metros (m)
-  float velocidadeLimiar = 0.8;         // Metros por segundo (m/s)
   float limiteMinimoSensor = 0.02;      // Metros (m) - Ponto cego do HC-SR04
-  float limiteRuidoVelocidade = 0.05;   // Metros por segundo (m/s) - Filtro de objetos parados
+  float limiteRuidoVelocidade = 0.05;   // Metros por segundo (m/s) - Filtro de imobilidade/ruído
+  float velocidadeSeguranca = 0.3;      // Metros por segundo (m/s) - Assumida para pessoas paradas
+  float tempoMaximoAbsoluto = 15.0;     // Segundos (s) - Teto para o semáforo não travar
   
   float deltaT = 0.2;                   // Segundos (s) - Intervalo de amostragem
   
@@ -154,47 +155,63 @@ void GerenciarTravessia(int tempoBaseTravessiaMS)
 
     float distanciaAtual = CalcularDistancia(); // m
 
-    // Verifica se a leitura é válida
+    // Verifica se a leitura é válida (Ignora o ponto cego e o que está fora da rua)
     if(distanciaAtual > limiteMinimoSensor && distanciaAtual < larguraAvenida){ 
-      pedestreNaFaixa = true; 
+      pedestreNaFaixa = true; // Aciona a flag de presença imediatamente
       
       float dS = abs(distanciaAnterior - distanciaAtual); 
       float velocidadeMedia = dS / deltaT; 
-      velExibicao = velocidadeMedia; 
+      velExibicao = velocidadeMedia; // Guarda a velocidade real para o display
       
-      if(velocidadeMedia > limiteRuidoVelocidade && velocidadeMedia < velocidadeLimiar){
-        
-        float distanciaRestante;
+      float velocidadeCalculo;
+
+      // 1. BLINDAGEM DA PESSOA IMÓVEL (Cadeirante travado, queda de objeto)
+      if (velocidadeMedia <= limiteRuidoVelocidade) {
+        // Se a pessoa parece parada, o sistema entra em modo de segurança
+        // e assume uma velocidade minúscula para forçar a injeção máxima de tempo.
+        velocidadeCalculo = velocidadeSeguranca; 
+      } else {
+        // Se a pessoa está se movendo de forma detectável, usa a velocidade real.
+        velocidadeCalculo = velocidadeMedia;
+      }
+
+      float distanciaRestante;
       
-        // Descobre a direção do movimento
-        if (distanciaAtual < distanciaAnterior) {
-          distanciaRestante = distanciaAtual;
-        } else {
-          distanciaRestante = larguraAvenida - distanciaAtual;
-        }
-      
-        // Previne divisão por zero
-        if (distanciaRestante > 0.0) {
-          float tempoExtra = distanciaRestante / velocidadeMedia; 
-          tExtraExibicao = tempoExtra; 
-      
-          if((tempoDecorrido + tempoExtra) > tempoAtualTravessia){
-            tempoAtualTravessia = tempoDecorrido + tempoExtra;
-      
-            // Trava de segurança
-            if(tempoAtualTravessia > 15.0){
-              tempoAtualTravessia = 15.0;
-            }
+      // 2. BLINDAGEM DO VETOR DIRECIONAL
+      if (distanciaAtual < distanciaAnterior) {
+        // Indo em direção ao sensor. O que falta é a distância até o sensor.
+        distanciaRestante = distanciaAtual;
+      } else {
+        // Afastando-se do sensor. O que falta é a largura total menos onde ele está.
+        distanciaRestante = larguraAvenida - distanciaAtual;
+      }
+    
+      // 3. BLINDAGEM DO PEDESTRE SAUDÁVEL E INJEÇÃO DE TEMPO
+      // O cálculo agora é feito para QUALQUER pessoa na faixa, não importa a velocidade.
+      if (distanciaRestante > 0.0) {
+        float tempoExtra = distanciaRestante / velocidadeCalculo; 
+        tExtraExibicao = tempoExtra; // Atualiza o display com a injeção teórica
+    
+        // Se o tempo que a pessoa precisa ultrapassar o tempo que o semáforo ainda tem...
+        if((tempoDecorrido + tempoExtra) > tempoAtualTravessia){
+          // ... estendemos o tempo do semáforo.
+          tempoAtualTravessia = tempoDecorrido + tempoExtra;
+    
+          // Trava de segurança para impedir que o semáforo fique vermelho para sempre
+          if(tempoAtualTravessia > tempoMaximoAbsoluto){
+            tempoAtualTravessia = tempoMaximoAbsoluto;
           }
         }
       }
-    } // A CHAVE QUE FALTAVA ESTÁ AQUI. ELA FECHA O BLOCO DE DETECÇÃO.
+    } // FIM DA DETECÇÃO DO SENSOR
 
-    // A atualização do display DEVE ficar de fora do 'if' para a tela não congelar
+    // A atualização do display fica de fora para garantir que não congele quando a faixa esvaziar
     AtualizarDisplayOLED(3, tempoAtualTravessia, tempoDecorrido, pedestreNaFaixa, velExibicao, tExtraExibicao);
+    
+    // Prepara o delta de distância para a próxima iteração do loop
     distanciaAnterior = distanciaAtual; 
-  } // Fecha o while
-} // Fecha a função
+  } // FIM DO WHILE DA TRAVESSIA
+}
 
 void EstadoSemaforo(int estado)
 {
