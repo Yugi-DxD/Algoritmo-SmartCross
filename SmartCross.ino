@@ -158,22 +158,31 @@ void GerenciarTravessia(int tempoBaseTravessiaMS)
     if(distanciaAtual > limiteMinimoSensor && distanciaAtual < larguraAvenida){ 
       pedestreNaFaixa = true; // Gatilho visual para o OLED
       
-      float dS = abs(distanciaAnterior - distanciaAtual); // m
-      float velocidadeMedia = dS / deltaT;                // m/s
-      velExibicao = velocidadeMedia; // Guarda para mostrar na tela
-
-      // Filtra o ruído e verifica se a pessoa está lenta
-      if(velocidadeMedia > limiteRuidoVelocidade && velocidadeMedia < velocidadeLimiar){
-        
-        // t = S / v  -> O tempo extra é a distância que falta dividida pela velocidade
-        float tempoExtra = distanciaAtual / velocidadeMedia; // s
-        tExtraExibicao = tempoExtra; // Guarda para mostrar na tela
-
-        // Se o tempo previsto for maior que o tempo que já temos, injeta mais tempo
+    float dS = abs(distanciaAnterior - distanciaAtual); 
+    float velocidadeMedia = dS / deltaT; // Mantém o módulo da velocidade
+    velExibicao = velocidadeMedia; 
+    
+    if(velocidadeMedia > limiteRuidoVelocidade && velocidadeMedia < velocidadeLimiar){
+      
+      float distanciaRestante;
+    
+      // Descobre a direção do movimento
+      if (distanciaAtual < distanciaAnterior) {
+        // Pedestre se aproximando do sensor. O que falta é a distância atual.
+        distanciaRestante = distanciaAtual;
+      } else {
+        // Pedestre se afastando do sensor. O que falta é a via menos onde ele está.
+        distanciaRestante = larguraAvenida - distanciaAtual;
+      }
+    
+      // Previne divisão por zero ou números negativos absurdos por ruído do sensor
+      if (distanciaRestante > 0.0) {
+        float tempoExtra = distanciaRestante / velocidadeMedia; 
+        tExtraExibicao = tempoExtra; 
+    
         if((tempoDecorrido + tempoExtra) > tempoAtualTravessia){
           tempoAtualTravessia = tempoDecorrido + tempoExtra;
-
-          // Trava de segurança limite absoluto (15 segundos)
+    
           if(tempoAtualTravessia > 15.0){
             tempoAtualTravessia = 15.0;
           }
