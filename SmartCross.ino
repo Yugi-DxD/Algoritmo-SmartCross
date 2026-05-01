@@ -4,6 +4,12 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
+// Configurações do OLED
+#define SCREEN_WIDTH 128 // Largura do display em pixels
+#define SCREEN_HEIGHT 64 // Altura do display em pixels
+#define OLED_RESET    -1 // Reset compartilhado com o Arduino
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
 int ledVeiculo[3] = {2, 3, 4}; // 2 = Vermelho ; 3 = Amarelo ; 4 = Verde
 int ledPedestre[2] = {11, 12}; // 11 = Vermelho ; 12 = Verde
 int estado = 0;
