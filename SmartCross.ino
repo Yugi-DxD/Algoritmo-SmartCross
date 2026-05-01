@@ -149,51 +149,52 @@ void GerenciarTravessia(int tempoBaseTravessiaMS)
     float velExibicao = 0.0;
     float tExtraExibicao = 0.0;
     
-    delay(deltaT * 1000); // O delay exige milissegundos, então multiplicamos na chamada
+    delay(deltaT * 1000); 
     tempoDecorrido += deltaT; 
 
     float distanciaAtual = CalcularDistancia(); // m
 
-    // Verifica se a leitura é válida (Ignora o ponto cego e o que está fora da rua)
+    // Verifica se a leitura é válida
     if(distanciaAtual > limiteMinimoSensor && distanciaAtual < larguraAvenida){ 
-      pedestreNaFaixa = true; // Gatilho visual para o OLED
+      pedestreNaFaixa = true; 
       
-    float dS = abs(distanciaAnterior - distanciaAtual); 
-    float velocidadeMedia = dS / deltaT; // Mantém o módulo da velocidade
-    velExibicao = velocidadeMedia; 
-    
-    if(velocidadeMedia > limiteRuidoVelocidade && velocidadeMedia < velocidadeLimiar){
+      float dS = abs(distanciaAnterior - distanciaAtual); 
+      float velocidadeMedia = dS / deltaT; 
+      velExibicao = velocidadeMedia; 
       
-      float distanciaRestante;
-    
-      // Descobre a direção do movimento
-      if (distanciaAtual < distanciaAnterior) {
-        // Pedestre se aproximando do sensor. O que falta é a distância atual.
-        distanciaRestante = distanciaAtual;
-      } else {
-        // Pedestre se afastando do sensor. O que falta é a via menos onde ele está.
-        distanciaRestante = larguraAvenida - distanciaAtual;
-      }
-    
-      // Previne divisão por zero ou números negativos absurdos por ruído do sensor
-      if (distanciaRestante > 0.0) {
-        float tempoExtra = distanciaRestante / velocidadeMedia; 
-        tExtraExibicao = tempoExtra; 
-    
-        if((tempoDecorrido + tempoExtra) > tempoAtualTravessia){
-          tempoAtualTravessia = tempoDecorrido + tempoExtra;
-    
-          if(tempoAtualTravessia > 15.0){
-            tempoAtualTravessia = 15.0;
+      if(velocidadeMedia > limiteRuidoVelocidade && velocidadeMedia < velocidadeLimiar){
+        
+        float distanciaRestante;
+      
+        // Descobre a direção do movimento
+        if (distanciaAtual < distanciaAnterior) {
+          distanciaRestante = distanciaAtual;
+        } else {
+          distanciaRestante = larguraAvenida - distanciaAtual;
+        }
+      
+        // Previne divisão por zero
+        if (distanciaRestante > 0.0) {
+          float tempoExtra = distanciaRestante / velocidadeMedia; 
+          tExtraExibicao = tempoExtra; 
+      
+          if((tempoDecorrido + tempoExtra) > tempoAtualTravessia){
+            tempoAtualTravessia = tempoDecorrido + tempoExtra;
+      
+            // Trava de segurança
+            if(tempoAtualTravessia > 15.0){
+              tempoAtualTravessia = 15.0;
+            }
           }
         }
       }
-    }
-    // Atualiza a tela a cada ciclo do loop
+    } // A CHAVE QUE FALTAVA ESTÁ AQUI. ELA FECHA O BLOCO DE DETECÇÃO.
+
+    // A atualização do display DEVE ficar de fora do 'if' para a tela não congelar
     AtualizarDisplayOLED(3, tempoAtualTravessia, tempoDecorrido, pedestreNaFaixa, velExibicao, tExtraExibicao);
     distanciaAnterior = distanciaAtual; 
-  }
-}
+  } // Fecha o while
+} // Fecha a função
 
 void EstadoSemaforo(int estado)
 {
