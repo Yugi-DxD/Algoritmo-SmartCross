@@ -65,15 +65,15 @@ void AtualizarDisplayOLED(int estadoAtual, float tempoTotal, float tempoDecorrid
   display.print(F("ESTADO: ")); display.println(estadoAtual);
   display.print(F("LEDs Ativos: "));
   
-  if(estadoAtual == 1) display.println("Vd(Car) Vm(Ped)");
-  else if(estadoAtual == 2) display.println("Am(Car) Vm(Ped)");
-  else if(estadoAtual == 3) display.println("Vm(Car) Vd(Ped)");
-  else if(estadoAtual == 4) display.println("Vm(Car) Vm(Ped)");
+  if(estadoAtual == 1) display.println(F("Vd(Car) Vm(Ped)"));
+  else if(estadoAtual == 2) display.println(F("Am(Car) Vm(Ped)"));
+  else if(estadoAtual == 3) display.println(F("Vm(Car) Vd(Ped)"));
+  else if(estadoAtual == 4) display.println(F("Vm(Car) Vm(Ped)"));
 
   // 2. Cronômetro do Semáforo
-  display.print("Tempo: "); 
-  display.print(tempoDecorrido, 1); display.print("/"); 
-  display.print(tempoTotal, 1); display.println(" s");
+  display.print(F("Tempo: ")); 
+  display.print(tempoDecorrido, 1); display.print(F("/")); 
+  display.print(tempoTotal, 1); display.println(F(" s"));
   
   display.drawLine(0, 32, 128, 32, SSD1306_WHITE); // Linha divisória
 
@@ -81,8 +81,8 @@ void AtualizarDisplayOLED(int estadoAtual, float tempoTotal, float tempoDecorrid
   if(estadoAtual == 3) {
     if(temPedestre) {
       display.println(F("-> PEDESTRE NA FAIXA"));
-      display.print(F("Vel: ")); display.print(velocidade, 2); display.println(" m/s");
-      display.print(F("Acc. Tempo: +")); display.print(tempoExtra, 1); display.println(" s");
+      display.print(F("Vel: ")); display.print(velocidade, 2); display.println(F(" m/s"));
+      display.print(F("Acc. Tempo: +")); display.print(tempoExtra, 1); display.println(F(" s"));
     } else {
       display.println(F("-> FAIXA LIVRE"));
       display.println(F("Vel: -- m/s"));
