@@ -25,6 +25,8 @@ const int pinEccho = 7;
 float CalcularDistancia();
 void EstadoSemaforo(int estado);
 void GerenciarTravessia(int tempoBaseTravessia);
+void AtualizarDisplayOLED(int estadoAtual, float tempoTotal, float tempoDecorrido, bool temPedestre = false, float velocidade = 0.0, float tempoExtra = 0.0);
+void delayComDisplay(int estadoAtual, int tempoMS);
 
 void setup()
 {
@@ -36,6 +38,15 @@ void setup()
     pinMode(ledVeiculo[i], OUTPUT);
     if(i < 2) pinMode(ledPedestre[i], OUTPUT);
   }
+
+  // Inicializa o Display OLED (Endereço I2C comum é 0x3C)
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    // Se o display falhar, o Arduino trava num loop infinito (pisque um led de erro se quiser)
+    for(;;); 
+  }
+  
+  display.clearDisplay();
+  display.setTextColor(SSD1306_WHITE);
 }
 
 void loop()
@@ -43,6 +54,58 @@ void loop()
   estado++;
   if(estado > 4) estado = 1; // CORRIGIDO: Impede o "ciclo fantasma"
   EstadoSemaforo(estado);
+}
+
+void AtualizarDisplayOLED(int estadoAtual, float tempoTotal, float tempoDecorrido, bool temPedestre, float velocidade, float tempoExtra) {
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setCursor(0,0);
+
+  // 1. Informações do Estado
+  display.print("ESTADO: "); display.println(estadoAtual);
+  display.print("LEDs Ativos: ");
+  
+  if(estadoAtual == 1) display.println("Vd(Car) Vm(Ped)");
+  else if(estadoAtual == 2) display.println("Am(Car) Vm(Ped)");
+  else if(estadoAtual == 3) display.println("Vm(Car) Vd(Ped)");
+  else if(estadoAtual == 4) display.println("Vm(Car) Vm(Ped)");
+
+  // 2. Cronômetro do Semáforo
+  display.print("Tempo: "); 
+  display.print(tempoDecorrido, 1); display.print("/"); 
+  display.print(tempoTotal, 1); display.println(" s");
+  
+  display.drawLine(0, 32, 128, 32, SSD1306_WHITE); // Linha divisória
+
+  // 3. Informações do Sensor (Somente no Estado 3)
+  if(estadoAtual == 3) {
+    if(temPedestre) {
+      display.println("-> PEDESTRE NA FAIXA");
+      display.print("Vel: "); display.print(velocidade, 2); display.println(" m/s");
+      display.print("Acc. Tempo: +"); display.print(tempoExtra, 1); display.println(" s");
+    } else {
+      display.println("-> FAIXA LIVRE");
+      display.println("Vel: -- m/s");
+      display.println("Acc. Tempo: 0.0 s");
+    }
+  } else {
+    display.println("Monitoramento Offline");
+  }
+
+  display.display(); // Envia os dados para a tela
+}
+
+// Função para substituir os delays normais e manter a tela atualizando
+void delayComDisplay(int estadoAtual, int tempoMS) {
+  float tempoTotalSec = tempoMS / 1000.0;
+  float tempoDecorridoSec = 0.0;
+  float deltaT = 0.2; // Atualiza a tela a cada 200ms
+
+  while(tempoDecorridoSec < tempoTotalSec) {
+    AtualizarDisplayOLED(estadoAtual, tempoTotalSec, tempoDecorridoSec);
+    delay(deltaT * 1000);
+    tempoDecorridoSec += deltaT;
+  }
 }
 
 float CalcularDistancia()
@@ -81,6 +144,10 @@ void GerenciarTravessia(int tempoBaseTravessiaMS)
   float distanciaAnterior = CalcularDistancia(); // m
 
   while(tempoDecorrido < tempoAtualTravessia) {
+    // Variáveis para o Display
+    bool pedestreNaFaixa = false;
+    float velExibicao = 0.0;
+    float tExtraExibicao = 0.0;
     
     delay(deltaT * 1000); // O delay exige milissegundos, então multiplicamos na chamada
     tempoDecorrido += deltaT; 
@@ -89,15 +156,18 @@ void GerenciarTravessia(int tempoBaseTravessiaMS)
 
     // Verifica se a leitura é válida (Ignora o ponto cego e o que está fora da rua)
     if(distanciaAtual > limiteMinimoSensor && distanciaAtual < larguraAvenida){ 
+      pedestreNaFaixa = true; // Gatilho visual para o OLED
       
       float dS = abs(distanciaAnterior - distanciaAtual); // m
       float velocidadeMedia = dS / deltaT;                // m/s
+      velExibicao = velocidadeMedia; // Guarda para mostrar na tela
 
       // Filtra o ruído e verifica se a pessoa está lenta
       if(velocidadeMedia > limiteRuidoVelocidade && velocidadeMedia < velocidadeLimiar){
         
         // t = S / v  -> O tempo extra é a distância que falta dividida pela velocidade
         float tempoExtra = distanciaAtual / velocidadeMedia; // s
+        tExtraExibicao = tempoExtra; // Guarda para mostrar na tela
 
         // Se o tempo previsto for maior que o tempo que já temos, injeta mais tempo
         if((tempoDecorrido + tempoExtra) > tempoAtualTravessia){
@@ -110,6 +180,8 @@ void GerenciarTravessia(int tempoBaseTravessiaMS)
         }
       }
     }
+    // Atualiza a tela a cada ciclo do loop
+    AtualizarDisplayOLED(3, tempoAtualTravessia, tempoDecorrido, pedestreNaFaixa, velExibicao, tExtraExibicao);
     distanciaAnterior = distanciaAtual; 
   }
 }
@@ -124,7 +196,7 @@ void EstadoSemaforo(int estado)
         digitalWrite(ledVeiculo[0], LOW);
         digitalWrite(ledPedestre[1], LOW);
         digitalWrite(ledPedestre[0], HIGH);
-        delay(tempoVerde);
+        delayComDisplay(1, tempoVerde); // Novo delay inteligente
     break;
 
     case 2: //Sinal ficando Amarelo
@@ -133,7 +205,7 @@ void EstadoSemaforo(int estado)
         digitalWrite(ledVeiculo[0], LOW);
         digitalWrite(ledPedestre[1], LOW);
         digitalWrite(ledPedestre[0], HIGH);
-        delay(tempoAmarelo);
+        delayComDisplay(2, tempoAmarelo);
         break;
 
     case 3: //Sinal Fechado, Pedestres Aberto
@@ -148,7 +220,7 @@ void EstadoSemaforo(int estado)
     case 4: //Margem de Segurança
         digitalWrite(ledPedestre[1], LOW);
         digitalWrite(ledPedestre[0], HIGH);
-        delay(tempoEspera);
+        delayComDisplay(4, tempoEspera);
         break;
   }
 }
