@@ -62,8 +62,8 @@ void AtualizarDisplayOLED(int estadoAtual, float tempoTotal, float tempoDecorrid
   display.setCursor(0,0);
 
   // 1. Informações do Estado
-  display.print("ESTADO: "); display.println(estadoAtual);
-  display.print("LEDs Ativos: ");
+  display.print(F("ESTADO: ")); display.println(estadoAtual);
+  display.print(F("LEDs Ativos: "));
   
   if(estadoAtual == 1) display.println("Vd(Car) Vm(Ped)");
   else if(estadoAtual == 2) display.println("Am(Car) Vm(Ped)");
@@ -80,16 +80,16 @@ void AtualizarDisplayOLED(int estadoAtual, float tempoTotal, float tempoDecorrid
   // 3. Informações do Sensor (Somente no Estado 3)
   if(estadoAtual == 3) {
     if(temPedestre) {
-      display.println("-> PEDESTRE NA FAIXA");
-      display.print("Vel: "); display.print(velocidade, 2); display.println(" m/s");
-      display.print("Acc. Tempo: +"); display.print(tempoExtra, 1); display.println(" s");
+      display.println(F("-> PEDESTRE NA FAIXA"));
+      display.print(F("Vel: ")); display.print(velocidade, 2); display.println(" m/s");
+      display.print(F("Acc. Tempo: +")); display.print(tempoExtra, 1); display.println(" s");
     } else {
-      display.println("-> FAIXA LIVRE");
-      display.println("Vel: -- m/s");
-      display.println("Acc. Tempo: 0.0 s");
+      display.println(F("-> FAIXA LIVRE"));
+      display.println(F("Vel: -- m/s"));
+      display.println(F("Acc. Tempo: 0.0 s"));
     }
   } else {
-    display.println("Monitoramento Offline");
+    display.println(F("Monitoramento Offline"));
   }
 
   display.display(); // Envia os dados para a tela
