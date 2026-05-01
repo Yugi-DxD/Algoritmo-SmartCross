@@ -1,5 +1,8 @@
 // C++ code
 //
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 
 int ledVeiculo[3] = {2, 3, 4}; // 2 = Vermelho ; 3 = Amarelo ; 4 = Verde
 int ledPedestre[2] = {11, 12}; // 11 = Vermelho ; 12 = Verde
